@@ -92,6 +92,68 @@ To enable Apache Kafka to retain the Debezium change event messages in their ori
 
 See also: https://debezium.io/documentation/reference/stable/transformations/event-flattening.html[Debezium New Record State Extraction SMT^]
 
+== Using Apache Spark with Iceberg
+
+Data from Iceberg can be read by different systems like AWS Athena, Snowflake or Spark.
+The following example uses Iceberg REST catalog with S3 and Spark using the data stored in S3 bucket in Iceberg format.
+
+```yaml
+version: '3'
+services:
+
+  spark-iceberg:
+    image: tabulario/spark-iceberg:3.4.1_1.3.1
+    build: spark/
+    networks:
+      iceberg_net:
+    depends_on:
+      - rest
+    volumes:
+      - ./warehouse:/home/iceberg/warehouse
+      - ./warehouse:/home/iceberg/notebooks/cars
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+    ports:
+      - 8888:8888
+      - 8080:8080
+      - 10000:10000
+      - 10001:10001
+
+  rest:
+    image: tabulario/iceberg-rest:0.6.0
+    networks:
+      iceberg_net:
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - CATALOG_WAREHOUSE=s3://bucket-name/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+```
+
+Use Spark-SQL to:
+* List databases:
++
+```
+spark-sql ()> show databases;
+testnzss
+```
+* Show tables in database:
+*
+```
+spark-sql ()> show tables in testnzss;
+foobarcouf
+```
+* Select data from table:
++
+```
+spark-sql ()> select * from testnzss.foobarcouf;
+```
+
 == Test the connection
 
 After the connector is created, execute SELECT query on the Iceberg table to verify data.
